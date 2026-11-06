@@ -1,0 +1,4 @@
+# 每天凌晨 4 点做一次夜间整理（衰减、清孤边、弱连接修复）；每天 3 点备份 SQLite。
+# Nightly maintenance and a daily SQLite backup. Adjust paths, then add with `crontab -e`.
+0 4 * * * cd $HOME/anchor-memory && .venv/bin/python src/run_dream_pass.py >> $HOME/.local/share/anchor-memory/dream.log 2>&1
+0 3 * * * sqlite3 $HOME/.local/share/anchor-memory/memories.db ".backup '$HOME/anchor-backup-$(date +\%a).db'"

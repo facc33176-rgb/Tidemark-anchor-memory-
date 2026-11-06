@@ -1,5 +1,7 @@
 # Anchor Memory
 
+> 中文使用教程见 [README.zh-CN.md](README.zh-CN.md)（安装、硅基流动配置、接 Claude、常驻与备份）。
+
 A memory system for AI agents that live across sessions.
 
 An agent that wakes up without memory is a new person every time. Anchor Memory gives it a continuous life: it remembers conversations, forms beliefs about itself and its world, reviews what it knows, and forgets what no longer matters. Everything lives in a single SQLite file that the agent carries with it.
@@ -157,7 +159,8 @@ Exits nonzero unless SQLite, Chroma, and Kuzu counts agree.
 src/          memory, recall, graph, belief, routing, review, maintenance
 tests/        unit, contract, server-surface, and real-projection tests
 scripts/      projection rebuild and backfill utilities
-examples/     OAuth interface shape and health dashboard
+examples/     OAuth interface shape, health dashboard, SiliconFlow env, a stdlib client
+              (dedupe-before-write, keyword fallback) and deploy files (pm2, systemd, cron)
 docs/         architecture notes
 ```
 

@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-server = ["fastapi>=0.110", "uvicorn>=0.29", "pydantic>=2.6", "mcp>=1.0"]
+server = ["fastapi>=0.110", "uvicorn>=0.29", "pydantic>=2.6", "mcp>=1.0,<2"]
 chroma = ["chromadb>=1.5.9,<2"]
 kuzu = ["kuzu==0.11.3"]
 local-embedding = ["sentence-transformers>=3"]
@@ -28,7 +28,7 @@ full = [
   "fastapi>=0.110",
   "uvicorn>=0.29",
   "pydantic>=2.6",
-  "mcp>=1.0",
+  "mcp>=1.0,<2",
 ]
 dev = ["pytest>=8"]
 

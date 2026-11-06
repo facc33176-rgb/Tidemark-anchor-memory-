@@ -52,8 +52,9 @@ BINARY_HEADERS = {
 ALLOWED_PUBLIC_HOSTS = {
     "localhost", "127.0.0.1", "0.0.0.0", "::1",
     "api.voyageai.com", "api.anthropic.com", "api.openai.com", "api.deepseek.com",
-    "api.siliconflow.cn",
+    "api.siliconflow.cn", "cloud.siliconflow.cn",
     "github.com",
+    "fsf.org", "www.gnu.org", "www.fsf.org",  # AGPL license text
 }
 ALLOWED_PUBLIC_URLS = (
     "https:" + "//github.com/limen-threshold/anchor-memory/commit/"
