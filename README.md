@@ -1,10 +1,10 @@
-# Anchor Memory
+# Tidemark
 
 > 中文使用教程见 [README.zh-CN.md](README.zh-CN.md)（安装、硅基流动配置、接 Claude、常驻与备份）。
 
-A memory system for AI agents that live across sessions.
+A memory system for AI agents that live across sessions. Tidemark is a heavily modified derivative of [Anchor Memory](https://github.com/limen-threshold/anchor-memory) by Limen; code modules and `ANCHOR_*` settings keep their upstream names.
 
-An agent that wakes up without memory is a new person every time. Anchor Memory gives it a continuous life: it remembers conversations, forms beliefs about itself and its world, reviews what it knows, and forgets what no longer matters. Everything lives in a single SQLite file that the agent carries with it.
+An agent that wakes up without memory is a new person every time. Tidemark gives it a continuous life: it remembers conversations, forms beliefs about itself and its world, reviews what it knows, and forgets what no longer matters. Everything lives in a single SQLite file that the agent carries with it.
 
 This is a sanitized release of a live system running continuously since late February 2026 -- not a prototype or a spec. The recall paths, belief engine, reflex routing, and maintenance loops are the same code that runs every day, with private data and credentials stripped.
 

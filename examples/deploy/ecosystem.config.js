@@ -2,7 +2,7 @@
 // 用 pm2 常驻：崩了自己拉起来，开机自启再加一句 pm2 startup
 module.exports = {
   apps: [{
-    name: 'anchor-memory',
+    name: 'tidemark',
     script: './examples/deploy/start.sh',
     cwd: __dirname + '/../..',
     interpreter: 'bash',

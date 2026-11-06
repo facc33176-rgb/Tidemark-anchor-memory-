@@ -1,8 +1,8 @@
-# Anchor Memory 中文教程
+# Tidemark 中文教程
 
 给 AI 伴侣、AI 助手用的长期记忆系统。它把聊过的事存进一个 SQLite 文件，下次对话前按意思和关键字把相关的旧事找回来，还会自己慢慢整理：常想起的变"热"，太久不碰的变"冷"，相关的记忆之间连成网。
 
-这是一个每天都在跑的真实系统的公开版（2026 年 2 月起持续运行），私人数据和钥匙都已去掉。上游是 Limen 的 [Anchor Memory](https://github.com/limen-threshold/anchor-memory)，这里在它基础上做了大量改动，并加了硅基流动支持，国内能直接用。
+这是一个每天都在跑的真实系统的公开版（2026 年 2 月起持续运行），私人数据和钥匙都已去掉。Tidemark 基于 Limen 的 [Anchor Memory](https://github.com/limen-threshold/anchor-memory) 做了大量改动，并加了硅基流动支持，国内能直接用。代码里的模块名（`anchor_sse` 等）和环境变量前缀 `ANCHOR_` 沿用上游，没有改名。
 
 仓库地址：<https://github.com/facc33176-rgb/Tidemark-anchor-memory->
 
@@ -30,8 +30,8 @@
 ## 1. 安装
 
 ```bash
-git clone https://github.com/facc33176-rgb/Tidemark-anchor-memory- anchor-memory
-cd anchor-memory
+git clone https://github.com/facc33176-rgb/Tidemark-anchor-memory- tidemark
+cd tidemark
 python3.12 -m venv .venv
 . .venv/bin/activate
 pip install -e ".[server,chroma]"     # 接口 + 向量库；想要记忆网的图库再加 kuzu： ".[server,chroma,kuzu]"
@@ -43,10 +43,10 @@ pytest                               # 可选：跑一遍自带测试
 钥匙放在仓库**外面**，不要提交进 git：
 
 ```bash
-mkdir -p ~/.config/anchor-memory
-cp examples/siliconflow/anchor.env.example ~/.config/anchor-memory/anchor.env
-chmod 600 ~/.config/anchor-memory/anchor.env
-nano ~/.config/anchor-memory/anchor.env       # 填上 SILICONFLOW_API_KEY=你的key
+mkdir -p ~/.config/tidemark
+cp examples/siliconflow/anchor.env.example ~/.config/tidemark/anchor.env
+chmod 600 ~/.config/tidemark/anchor.env
+nano ~/.config/tidemark/anchor.env       # 填上 SILICONFLOW_API_KEY=你的key
 ```
 
 一个 key 同时管向量（`BAAI/bge-m3`）和重排（`BAAI/bge-reranker-v2-m3`）。硅基流动按量计费，记得在后台开余额提醒——欠费时向量召回会失败（见下面"两个实用习惯"里的保底办法）。
@@ -57,7 +57,7 @@ nano ~/.config/anchor-memory/anchor.env       # 填上 SILICONFLOW_API_KEY=你�
 ./examples/deploy/start.sh
 ```
 
-看到 `REST on 127.0.0.1:8765` 和 `Streamable HTTP on 127.0.0.1:8768` 就起来了。数据默认在 `~/.local/share/anchor-memory/`（可用 `ANCHOR_DATA_DIR` 改）。另开一个终端试试：
+看到 `REST on 127.0.0.1:8765` 和 `Streamable HTTP on 127.0.0.1:8768` 就起来了。数据默认在 `~/.local/share/tidemark/`（可用 `ANCHOR_DATA_DIR` 改）。另开一个终端试试：
 
 ```bash
 curl -s localhost:8765/api/count
@@ -94,7 +94,7 @@ curl -s -G localhost:8765/api/recall --data-urlencode "query=下雨天喝什么"
 **Claude Code（本机）**：
 
 ```bash
-claude mcp add --transport http anchor http://127.0.0.1:8768/mcp
+claude mcp add --transport http tidemark http://127.0.0.1:8768/mcp
 ```
 
 之后在对话里说"先看看记忆里关于我的事"，Claude 会自己调 `briefing`、`search_memory`、`store_memory`。
@@ -109,7 +109,7 @@ claude mcp add --transport http anchor http://127.0.0.1:8768/mcp
 
 ```bash
 pm2 start examples/deploy/ecosystem.config.js && pm2 save        # pm2
-# 或 systemd 用户服务：见 examples/deploy/anchor-memory.service 文件头的说明
+# 或 systemd 用户服务：见 examples/deploy/tidemark.service 文件头的说明
 ```
 
 每晚整理和每天备份，照 `examples/deploy/crontab.example` 加进 `crontab -e`。
@@ -117,7 +117,7 @@ pm2 start examples/deploy/ecosystem.config.js && pm2 save        # pm2
 所有记忆都在 `memories.db` 一个文件里。搬家只需要停服务、拷这个文件；向量库和图库可以重建：
 
 ```bash
-python scripts/rebuild_projections.py --source-db ~/.local/share/anchor-memory/memories.db --output-dir ./projection-rebuild
+python scripts/rebuild_projections.py --source-db ~/.local/share/tidemark/memories.db --output-dir ./projection-rebuild
 ```
 
 ## 7. 两个实用习惯（我们在真实使用里踩出来的）
@@ -142,5 +142,5 @@ python scripts/rebuild_projections.py --source-db ~/.local/share/anchor-memory/m
 ## 安全提醒
 
 - 两个端口默认只听本机（127.0.0.1），保持这样；要远程用就加鉴权。
-- 钥匙只放在 `~/.config/anchor-memory/anchor.env` 这类仓库外的文件里。
+- 钥匙只放在 `~/.config/tidemark/anchor.env` 这类仓库外的文件里。
 - `memories.db` 里是最私密的东西，备份文件同样要保管好。

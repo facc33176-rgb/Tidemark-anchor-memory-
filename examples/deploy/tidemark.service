@@ -1,0 +1,15 @@
+# systemd user unit. Copy to ~/.config/systemd/user/tidemark.service, then:
+#   systemctl --user daemon-reload && systemctl --user enable --now tidemark
+#   loginctl enable-linger $USER   # keep it running after you log out
+[Unit]
+Description=Tidemark memory (REST 8765 + MCP 8768, localhost only)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/tidemark
+ExecStart=%h/tidemark/examples/deploy/start.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
