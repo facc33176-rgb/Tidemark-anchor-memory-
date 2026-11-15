@@ -1613,6 +1613,57 @@ async def _api_store(request: _Request):
     return {"memory_id": mid, "source_ref": source_ref or None,
             "evokes_proposed": len(evoke_ids)}
 
+# ── 把关写入 / 先判断再回忆 / 出处（remember_gate.py）──
+import remember_gate as _rg
+
+
+@_rest.post("/api/remember")
+async def _api_remember(request: _Request):
+    """存一条带分类和出处的记忆：几乎一样的不重复存；像但不确定的照存并报出相似的；传 revise_of 才改旧的。"""
+    body = await request.json()
+    try:
+        result = await asyncio.to_thread(
+            _rg.remember, mem, body.get("text", ""),
+            kind=body.get("kind", "fact"), source=body.get("source", ""),
+            quote=body.get("quote", ""), key=body.get("key", ""),
+            revise_of=str(body.get("revise_of", "") or ""),
+        )
+    except ValueError as exc:
+        return _JSONResponse(status_code=400, content={"error": str(exc)})
+    return result
+
+
+@_rest.get("/api/gate")
+async def _api_gate(text: str, last_query: str = ""):
+    """不花模型钱的判断：这句话值不值得去翻记忆。"""
+    return _rg.should_recall(text, last_query)
+
+
+@_rest.get("/api/memory_pack")
+async def _api_memory_pack(query: str, budget: int = 6, max_chars: int = 1200,
+                           gate: bool = True, last_query: str = "", policy: str = "search"):
+    """判断 → 召回 → 附上分类和出处 → 按字数截断，并报告截掉几条。"""
+    try:
+        return await asyncio.to_thread(
+            _rg.memory_pack, mem, query, budget=budget, max_chars=max_chars,
+            gate=gate, last_query=last_query, policy=policy,
+        )
+    except Exception as exc:
+        print(f"[Anchor REST] memory_pack unavailable: {type(exc).__name__}", flush=True)
+        return _JSONResponse(status_code=503, headers={"Retry-After": "2"},
+                             content={"error": "memory_pack temporarily unavailable"})
+
+
+@_rest.get("/api/provenance")
+async def _api_provenance(memory_id: str):
+    """一条记忆的出处、原话和改动记录。"""
+    row = mem.db.get(memory_id)
+    if not row:
+        return _JSONResponse(status_code=404, content={"error": "not found"})
+    return {"memory_id": memory_id, "text": row.get("text", ""),
+            "kind": _rg.kind_of(row.get("tag", "")), **_rg.provenance(mem, memory_id)}
+
+
 @_rest.get("/api/count")
 async def _api_count():
     return {"count": mem.count()}

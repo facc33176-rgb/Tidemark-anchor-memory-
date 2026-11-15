@@ -176,3 +176,8 @@ notice is preserved in [NOTICE](NOTICE).
 New downstream material and modifications are licensed under the
 [GNU Affero General Public License v3.0](LICENSE). See [NOTICE](NOTICE)
 for upstream licensing and the repository's earlier MIT-licensed history.
+
+## Gated writes and provenance (`/api/remember`, `/api/memory_pack`)
+
+`POST /api/remember {text, kind, source, quote, key?, revise_of?}` stores a memory with a kind (`fact|preference|event|understanding|state`) and provenance. Near-identical text is treated as a duplicate (heat only); similar-but-uncertain text is stored as new and reported in `similar`, so the caller decides whether to re-send with `revise_of=<id>` (the old text is kept in the revision log). `kind=state` with a `key` keeps a single, overwritten record.
+`GET /api/gate?text=` is a cheap rule gate (skip short acknowledgements, recall on past references, entities and questions). `GET /api/memory_pack?query=&max_chars=` gates, recalls, attaches kind/source/quote and enforces a character budget, reporting how many items were truncated. `GET /api/provenance?memory_id=` returns source, quote and revisions.

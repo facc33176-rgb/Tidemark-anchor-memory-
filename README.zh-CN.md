@@ -87,6 +87,30 @@ curl -s -G localhost:8765/api/recall --data-urlencode "query=下雨天喝什么"
 | `GET /api/count` | 总数 |
 | `POST /api/remove` | 删除（进回收站）：`memory_id`；`/api/trash` 看、`/api/restore` 恢复 |
 
+### 带分类和出处地记：`/api/remember`、`/api/memory_pack`
+
+日常聊天里自动记东西，建议用这一组，不要直接 `/api/store`：
+
+```bash
+# 记一条：kind 是 fact / preference / event / understanding / state 之一；source 写来源，quote 写原话
+curl -s -X POST localhost:8765/api/remember -H 'Content-Type: application/json' \
+  -d '{"text":"她不吃香菜，点外卖要备注","kind":"preference","source":"chat:2026-11-15#12","quote":"我不吃香菜！！"}'
+# → {"action":"stored","memory_id":"…","similar":[…]}
+```
+
+- 几乎一字不差的，不会重复存，返回 `duplicate` 并给旧的那条加一点热度。
+- 看着像、但不确定是不是同一件事的（比如「考宏观」和「考微观」），**照存成新的**，同时在 `similar` 里把像的那几条报出来。要不要改旧的由你（或你的模型）判断：确认是同一件事的新说法，就再调一次并带上 `"revise_of":"旧的 memory_id"`，旧内容会留在改动记录里，不会丢。
+- `kind=state` 再带 `"key":"近况"`：同一个 key 只留一条，每次覆盖，适合「这周在搬宿舍」这种会过期的状态。
+
+```bash
+# 先判断要不要回忆：短承接（嗯嗯、好呀、哈哈）不查；问到以前、提到人名书名日期、提问才查
+curl -s -G localhost:8765/api/gate --data-urlencode "text=你还记得上次我们去哪吃饭吗"
+# 回忆包：判断 → 召回 → 附上分类和出处 → 按字数截断，并告诉你截掉了几条
+curl -s -G localhost:8765/api/memory_pack --data-urlencode "query=她不吃什么" --data-urlencode max_chars=800
+# 一条记忆的来源、原话和改动记录
+curl -s -G localhost:8765/api/provenance --data-urlencode memory_id=xxxx
+```
+
 把召回的记忆真正用进对话以后，可以调 `POST /api/heat` 给它们加一点热度，常被想起的会越来越容易浮现。
 
 ## 5. 接到 Claude
