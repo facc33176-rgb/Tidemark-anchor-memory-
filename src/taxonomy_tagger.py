@@ -169,8 +169,11 @@ def tag_one(memory_id: str, text: str, timestamp: str = "") -> bool:
             conn = sqlite3.connect(DB, timeout=10)
             try:
                 conn.execute("PRAGMA busy_timeout=5000")
+                # 保留 remember 写的 rkind:（分类），只替换五轴标签
+                row = conn.execute("SELECT tag FROM memories WHERE memory_id = ?", (memory_id,)).fetchone()
+                keep = [p.strip() for p in ((row[0] if row else "") or "").split(",") if p.strip().startswith("rkind:")]
                 conn.execute("UPDATE memories SET tag = ? WHERE memory_id = ?",
-                             (",".join(tags), memory_id))
+                             (",".join(keep + list(tags)), memory_id))
                 conn.commit()
                 return True
             finally:

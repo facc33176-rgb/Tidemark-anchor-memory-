@@ -1620,7 +1620,12 @@ import remember_gate as _rg
 @_rest.post("/api/remember")
 async def _api_remember(request: _Request):
     """存一条带分类和出处的记忆：几乎一样的不重复存；像但不确定的照存并报出相似的；传 revise_of 才改旧的。"""
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        return _JSONResponse(status_code=400, content={"error": "body must be JSON"})
+    if not isinstance(body, dict):
+        return _JSONResponse(status_code=400, content={"error": "body must be an object"})
     try:
         result = await asyncio.to_thread(
             _rg.remember, mem, body.get("text", ""),
@@ -1648,6 +1653,8 @@ async def _api_memory_pack(query: str, budget: int = 6, max_chars: int = 1200,
             _rg.memory_pack, mem, query, budget=budget, max_chars=max_chars,
             gate=gate, last_query=last_query, policy=policy,
         )
+    except ValueError as exc:
+        return _JSONResponse(status_code=400, content={"error": str(exc)})
     except Exception as exc:
         print(f"[Anchor REST] memory_pack unavailable: {type(exc).__name__}", flush=True)
         return _JSONResponse(status_code=503, headers={"Retry-After": "2"},
