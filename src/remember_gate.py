@@ -277,12 +277,14 @@ def memory_pack(mem, query, budget: int = 6, max_chars: int = 1200, gate: bool =
     decision = should_recall(query, last_query) if gate else {"recall": True, "reason": "forced"}
     if not decision["recall"]:
         return {"skipped": True, "reason": decision["reason"], "items": [], "truncated": 0, "chars": 0}
+    failed = False
     try:
         res = mem.recall(query, budget=budget, policy=policy, allow_empty=True)
         rows = res.get("results", []) if isinstance(res, dict) else (res or [])
     except Exception:
-        rows = []
-    if not rows:
+        rows, failed = [], True
+    # conversation 只要有把握的：召回正常但没结果就是没有，不拿关键字凑数；召回坏了才退回关键字
+    if not rows and (failed or policy == "search"):
         try:
             rows = mem.search(query=query, n_results=budget, hebbian=False, activate_on_hit=False, cite_on_hit=False)
         except Exception:

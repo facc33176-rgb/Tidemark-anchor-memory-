@@ -201,3 +201,14 @@ def test_caller_tags_and_tier(tmp_path, monkeypatch):
         except ValueError:
             pass
     assert rg.score(0) == 0.0 and rg.score(1) == 1.0
+
+
+def test_pack_conversation_does_not_pad(tmp_path, monkeypatch):
+    mem = fresh(tmp_path, monkeypatch)
+    rg.remember(mem, "她不吃香菜，点外卖要备注", kind="preference")
+    monkeypatch.setattr(mem, "recall", lambda *a, **k: {"results": []})
+    assert rg.memory_pack(mem, "今天食堂的饭好难吃怎么办", policy="conversation")["items"] == []
+    assert rg.memory_pack(mem, "香菜", gate=False, policy="search")["items"]
+    def boom(*a, **k): raise RuntimeError("embed down")
+    monkeypatch.setattr(mem, "recall", boom)
+    assert rg.memory_pack(mem, "香菜", gate=False, policy="conversation")["items"]
