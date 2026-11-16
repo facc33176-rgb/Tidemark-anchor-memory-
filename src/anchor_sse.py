@@ -1632,6 +1632,8 @@ async def _api_remember(request: _Request):
             kind=body.get("kind", "fact"), source=body.get("source", ""),
             quote=body.get("quote", ""), key=body.get("key", ""),
             revise_of=str(body.get("revise_of", "") or ""),
+            tag=body.get("tag", "") or "", tier=body.get("tier", "long") or "long",
+            emotion_score=_rg.score(body.get("emotion_score", 0.5)),
         )
     except ValueError as exc:
         return _JSONResponse(status_code=400, content={"error": str(exc)})

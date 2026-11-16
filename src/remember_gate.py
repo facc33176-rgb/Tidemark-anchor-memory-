@@ -51,8 +51,12 @@ def kind_of(tag: str) -> str:
     return ""
 
 
-def _with_kind(tag: str, kind: str) -> str:
-    parts = [p.strip() for p in (tag or "").split(",") if p.strip() and not p.strip().startswith(KIND_PREFIX)]
+def _with_kind(tag: str, kind: str, extra: str = "") -> str:
+    parts = []
+    for p in ((tag or "") + "," + (extra or "")).split(","):
+        p = p.strip()
+        if p and not p.startswith(KIND_PREFIX) and p not in parts:
+            parts.append(p)
     return ",".join([f"{KIND_PREFIX}{kind}"] + parts)
 
 
@@ -181,12 +185,22 @@ def _new_id(mem) -> str:
     raise RuntimeError("could not allocate memory_id")
 
 
+def score(v) -> float:
+    """emotion_score：0～1 的数，其它一律当错。"""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        raise ValueError("emotion_score must be a number")
+    v = float(v)
+    if not 0.0 <= v <= 1.0:
+        raise ValueError("emotion_score must be between 0 and 1")
+    return v
+
+
 def remember(mem, text, kind="fact", source="", quote="", key="", revise_of="",
-             tier: str = "long", emotion_score: float = 0.5) -> dict:
+             tier: str = "long", emotion_score: float = 0.5, tag: str = "") -> dict:
     """revise_of: 调用方（模型）确认「这是那条旧记忆的更新」时传旧 memory_id，才会改旧的。
     不传时：去掉空格标点后一字不差 → duplicate；像 → 照存为新的，并在 similar 里报出来。"""
     for name, val in (("text", text), ("kind", kind), ("source", source), ("quote", quote),
-                      ("key", key), ("revise_of", revise_of)):
+                      ("key", key), ("revise_of", revise_of), ("tag", tag), ("tier", tier)):
         if val is not None and not isinstance(val, str):
             raise ValueError(f"{name} must be a string")
     text = (text or "").strip()
@@ -198,6 +212,13 @@ def remember(mem, text, kind="fact", source="", quote="", key="", revise_of="",
     if kind not in KINDS:
         raise ValueError(f"kind must be one of {', '.join(KINDS)}")
     source, quote, key, revise_of = source or "", quote or "", key or "", (revise_of or "").strip()
+    # tag：调用方自己的标签（分类、语气、日期…），原样并进去；rkind: 由这里管，传进来的会被忽略
+    tag = (tag or "").strip()
+    if len(tag) > 1000:
+        raise ValueError("tag too long (max 1000)")
+    tier = (tier or "long").strip()
+    if tier not in ("short", "long"):
+        raise ValueError("tier must be short or long")
 
     with _LOCK:
         # 近况：一个 key 只留一条，每次覆盖，旧内容记进改动记录
@@ -208,7 +229,7 @@ def remember(mem, text, kind="fact", source="", quote="", key="", revise_of="",
                 _seen_again(mem, mid, source)
                 return {"action": "duplicate", "memory_id": mid}
             # tier 一定要 long：short 会被定期清理，近况不能被清掉
-            _overwrite(mem, mid, text, _with_kind(old.get("tag", "") if old else "", "state"), "long",
+            _overwrite(mem, mid, text, _with_kind(old.get("tag", "") if old else "", "state", tag), "long",
                        emotion_score, old, bump_time=True)
             if old:
                 _mark_revised(mem, mid, old.get("text"))
@@ -222,7 +243,7 @@ def remember(mem, text, kind="fact", source="", quote="", key="", revise_of="",
                 raise ValueError("revise_of not found")
             if (old.get("collection") or "") == "wenku" or (old.get("level") or "raw") not in ("raw", "understanding", "cognition"):
                 raise ValueError("revise_of must be a daily memory")
-            _overwrite(mem, revise_of, text, _with_kind(old.get("tag", ""), kind), old.get("tier") or tier,
+            _overwrite(mem, revise_of, text, _with_kind(old.get("tag", ""), kind, tag), old.get("tier") or tier,
                        emotion_score, old)
             _mark_revised(mem, revise_of, old.get("text"))
             _annotate_source(mem, revise_of, source, quote)
@@ -238,7 +259,7 @@ def remember(mem, text, kind="fact", source="", quote="", key="", revise_of="",
         similar = [x for x in near if x["sim"] >= NEAR_SIM][:3]
 
         mid = _new_id(mem)
-        mem.store(memory_id=mid, text=text, tag=_with_kind("", kind), tier=tier, emotion_score=emotion_score)
+        mem.store(memory_id=mid, text=text, tag=_with_kind("", kind, tag), tier=tier, emotion_score=emotion_score)
         _annotate_source(mem, mid, source, quote)
         _heat(mem, mid, 0.6, "remember_store", True)
         return {"action": "stored", "memory_id": mid, "similar": similar}

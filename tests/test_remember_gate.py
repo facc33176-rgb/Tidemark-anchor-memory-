@@ -173,3 +173,31 @@ def test_tagger_keeps_rkind(tmp_path, monkeypatch):
     assert taxonomy_tagger.tag_one(r["memory_id"], "她最近在学吉他") is True
     tag = mem.db.get(r["memory_id"])["tag"]
     assert rg.kind_of(tag) == "state" and "kind:event" in tag
+
+
+def test_caller_tags_and_tier(tmp_path, monkeypatch):
+    mem = fresh(tmp_path, monkeypatch)
+    a = rg.remember(mem, "她说考完试想去看海", kind="event", tier="short",
+                    tag="日常相处,tone:tender,rkind:fact,date:20261115", emotion_score=0.6)
+    row = mem.db.get(a["memory_id"])
+    assert row["tier"] == "short"
+    assert row["tag"] == "rkind:event,日常相处,tone:tender,date:20261115"
+    b = rg.remember(mem, "她说考完试想去青岛看海", kind="event", tag="date:20261116,heat:high",
+                    revise_of=a["memory_id"])
+    tag = mem.db.get(b["memory_id"])["tag"]
+    assert tag.startswith("rkind:event,") and "日常相处" in tag and "date:20261116" in tag and "heat:high" in tag
+    s = rg.remember(mem, "她这周在考试周", kind="state", key="近况", tag="学习")
+    assert "学习" in mem.db.get(s["memory_id"])["tag"] and mem.db.get(s["memory_id"])["tier"] == "long"
+    for bad in (dict(tier="forever"), dict(tag=["x"]), dict(tag="x" * 1001)):
+        try:
+            rg.remember(mem, "随便一句", **bad)
+            raise AssertionError(bad)
+        except ValueError:
+            pass
+    for v in (True, "0.5", 2, -1):
+        try:
+            rg.score(v)
+            raise AssertionError(v)
+        except ValueError:
+            pass
+    assert rg.score(0) == 0.0 and rg.score(1) == 1.0
